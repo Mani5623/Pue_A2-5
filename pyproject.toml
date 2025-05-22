@@ -1,0 +1,15 @@
+[project]
+name = "Pue_A2-5"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Mani5623", email = "hm9703@mci4me.at"},
+]
+dependencies = ["numpy>=2.2.6", "matplotlib>=3.10.3", "pandas>=2.2.3"]
+requires-python = "==3.13.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false

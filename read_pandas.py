@@ -23,9 +23,6 @@ def read_my_csv():
     # Gibt den geladen Dataframe zurück
     return df
 
-df = read_my_csv()
-max_hr = df['HeartRate'].max()
-
 def get_zone_limit(max_hr):
     zone_1 = [0.5*max_hr, 0.6*max_hr]
     zone_2 = [0.6*max_hr, 0.7*max_hr]
@@ -48,66 +45,49 @@ def assign_zone(hr, zones):
             return zone
     return 'Zone_5'  # Falls hr == max_hr
 
-# %%
-
-def make_plot(df):
+def make_plot(df, zones):
     zone_colors = {
         'Zone_1': 'blue',
-        'Zone_2': 'green',
+        'Zone_2': 'green', 
         'Zone_3': 'yellow',
         'Zone_4': 'orange',
         'Zone_5': 'red'
     }
     
-    # Zonen berechnen
-    max_hr = df['HeartRate'].max()
-    zones = get_zone_limit(max_hr)
-    
-    # Zone für jeden Herzfrequenzwert zuweisen
+    # Zone assignment should be done before calling this function
     df['Zone'] = df['HeartRate'].apply(lambda x: assign_zone(x, zones))
-
-    # Plot erstellen
+    
     fig = px.scatter(
         df, x='Time', y='HeartRate', color='Zone',
         color_discrete_map=zone_colors,
-        title='Herzfrequenz nach Zonen über Zeit',
-        labels={'HeartRate': 'Herzfrequenz (bpm)', 'Time': 'Zeit'}
+        labels={'HeartRate': 'Herzfrequenz [bpm], Power [W]', 'Time': 'Zeit [s]'},
+        title='Herzfrequenz- und Leistungsanalyse'
     )
     
-    # Power-Linie hinzufügen
     fig.add_scatter(
         x=df['Time'], y=df['PowerOriginal'],
-        mode='lines', name='Power', line=dict(color='black')
+        mode='lines', name='Power', line=dict(color='black', width=2)
     )
     
     return fig
 
+#%% Test - Nur ausführen wenn das Modul direkt gestartet wird
+if __name__ == "__main__":
+    df = read_my_csv()
+    max_hr = df['HeartRate'].max()
+    zones = get_zone_limit(max_hr)
+    
+    # Zonen zuweisen BEVOR auf 'Zone' zugegriffen wird
+    df['Zone'] = df['HeartRate'].apply(lambda x: assign_zone(x, zones))
+    
+    zone_counts = df['Zone'].value_counts().sort_index()
+    zone_minutes = zone_counts / 60  # Umrechnung von Sekunden in Minuten
 
+    print("Zeit in jeder Herzfrequenzzone (in Minuten):")
+    for zone, minutes in zone_minutes.items():
+        print(f"{zone}: {minutes:.1f} Minuten")
 
-
-
-#%% Test
-
-df = read_my_csv()
-zones = get_zone_limit(max_hr)
-#print(zones)
-#mean_power = df['PowerOriginal'].mean()
-#max_power = df['PowerOriginal'].max()
-#print(mean_power)
-#print(max_power)
-#print(df)
-# Zone für jeden Herzfrequenzwert zuweisen
-df['Zone'] = df['HeartRate'].apply(lambda x: assign_zone(x, zones))
-
-
-zone_counts = df['Zone'].value_counts().sort_index()
-zone_minutes = zone_counts / 60  # Umrechnung von Sekunden in Minuten
-
-print("Zeit in jeder Herzfrequenzzone (in Minuten):")
-for zone, minutes in zone_minutes.items():
-    print(f"{zone}: {minutes:.1f} Minuten")
-
-fig = make_plot(df)
-fig.show()
+    fig = make_plot(df, zones)
+    fig.show()
 
 # %%

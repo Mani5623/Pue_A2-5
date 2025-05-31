@@ -77,7 +77,6 @@ if __name__ == "__main__":
     max_hr = df['HeartRate'].max()
     zones = get_zone_limit(max_hr)
     
-    # Zonen zuweisen BEVOR auf 'Zone' zugegriffen wird
     df['Zone'] = df['HeartRate'].apply(lambda x: assign_zone(x, zones))
     
     zone_counts = df['Zone'].value_counts().sort_index()

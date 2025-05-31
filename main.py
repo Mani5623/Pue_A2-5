@@ -42,19 +42,32 @@ with tab1:
     st.write("Bildpfad:", picture_path)
     st.write("Personendaten:", person["date_of_birth"])
 
-with tab2:
-    st.write("# Leistungstest")
-    max_hr_input = st.number_input("Maximale Herzfrequenz", min_value=0, max_value=250, step=1)
-    
-    if st.button("Absenden"):
-        df = read_pandas.read_my_csv()
-        zones = read_pandas.get_zone_limit(max_hr_input)
+    with tab2:
+        st.write("# Leistungstest")
+        max_hr_input = st.number_input("Maximale Herzfrequenz", min_value=0, max_value=250, step=1)
         
-        # Assign zones to each heart rate value
-        df['Zone'] = df['HeartRate'].apply(lambda x: read_pandas.assign_zone(x, zones))
+        if st.button("Absenden"):
+            df = read_pandas.read_my_csv()
+            zones = read_pandas.get_zone_limit(max_hr_input)
+            
+            # Assign zones to each heart rate value
+            df['Zone'] = df['HeartRate'].apply(lambda x: read_pandas.assign_zone(x, zones))
+            
+            fig = read_pandas.make_plot(df, zones)
+            st.plotly_chart(fig)
+
+            zone_counts = df['Zone'].value_counts().sort_index()
+            zone_minutes = zone_counts / 60  # Umrechnung von Sekunden in Minuten
+
+            st.write("##### Zeit in jeder Herzfrequenzzone (in Minuten):")
+            for zone, minutes in zone_minutes.items():
+                st.write(f"{zone}: {minutes:.1f} Minuten")
+
+            avg_power_per_zone = df.groupby('Zone')['PowerOriginal'].mean()
         
-        fig = read_pandas.make_plot(df, zones)
-        st.plotly_chart(fig)
+            st.write("##### Durchschnittliche Leistung in den einzelnen Zonen:")
+            for zone, avg_power in avg_power_per_zone.items():
+                st.write(f"{zone}: {avg_power:.1f} Watt")
 
 
     

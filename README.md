@@ -66,6 +66,27 @@ Pue_A2-5/
 ├── README.md            # Dieses Dokument
 └── screenshot.png       # Screenshot der App (für Abgabe)
 ```
+# 🚴 Leistungstest-Analyse – Interaktive Streamlit App
+
+Diese App ist Teil der Abgabe **„Interaktiver Plot“** im Rahmen der Veranstaltung PÜE. Sie analysiert Daten eines Leistungstests basierend auf einer `activity.csv`-Datei und stellt sie interaktiv dar. Zusätzlich zur Power Curve wurde ein zweiter Tab mit detaillierter Leistungs- und Herzfrequenzanalyse implementiert.
+
+---
+
+## 📈 Teil 2: Leistungskurve II
+
+In diesem Teil wird eine **Power Curve** berechnet – also die höchste durchschnittliche Leistung, die für verschiedene Zeitintervalle gehalten wurde. Diese Berechnung erfolgt aus einer Watt-Zeitreihe (in unserem Fall `Power Original` in `activity.csv`), **ohne dass eine Zeitspalte notwendig ist**.
+
+### 🧠 Vorgehen:
+- **`load_data()`**: Liest die Leistungsdaten aus der CSV-Datei und gibt eine Serie oder ein NumPy-Array zurück.
+- **`find_best_effort()`**: Sliding-Window-Algorithmus zur Berechnung der besten durchschnittlichen Leistung für ein bestimmtes Zeitfenster.
+- **`create_power_curve()`**: Erstellt ein DataFrame mit den besten Durchschnittsleistungen für vorgegebene Zeitintervalle.
+- **`plot_power_curve()`**: Visualisiert die Power Curve mit Plotly.
+
+Die Berechnung erfolgt auch unabhängig von gleichmäßigen Zeitabständen – wichtig ist nur, dass das Intervall (z. B. 1 Hz, also 1 Wert pro Sekunde) übergeben wird.
+
+Die Funktionalität ist testbar via `main.py`.
+
+---
 
 ## 🖼️ Screenshot
 

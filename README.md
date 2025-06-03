@@ -37,7 +37,13 @@ cd Pue_A2-5
 pdm install
 ```
 
-### 3. Starten
+### 3. Setup (mit PDM)
+Bibliotheken insallieren
+```bash
+pdm add "Name der Bibliothek"
+```
+
+### 4. Starten
 
 ```bash
 streamlit run app.py
@@ -63,4 +69,7 @@ Pue_A2-5/
 
 ## 🖼️ Screenshot
 
-![App Screenshot](screenshot.png)
+<img src="\figures\scrrenshot_1.png">
+<img src="\figures\scrrenshot_2.png">
+<img src="\figures\scrrenshot_3.png">
+<img src="\figures\scrrenshot_4.png">

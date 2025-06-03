@@ -69,7 +69,8 @@ Pue_A2-5/
 
 ## 🖼️ Screenshot
 
-<img src="\figures\scrrenshot_1.png">
-<img src="\figures\scrrenshot_2.png">
-<img src="\figures\scrrenshot_3.png">
-<img src="\figures\scrrenshot_4.png">
+<img src="screenshot_1.png">
+<img src="screenshot_2.png">
+<img src="screenshot_3.png">
+<img src="screenshot_4.png">
+<img src="PowerCurve.png">

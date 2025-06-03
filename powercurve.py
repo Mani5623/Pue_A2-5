@@ -6,6 +6,8 @@ import plotly.io as pio
 pio.renderers.default = "browser"
 
 
+
+
 def load_data(path: str) -> pd.Series:
     """
     Lädt Leistungsdaten aus einer CSV-Datei und gibt die Power-Spalte zurück.
@@ -71,6 +73,7 @@ def plot_power_curve(df: pd.DataFrame):
     )
 
     fig.show()
+    return fig
 
 
 if __name__ == "__main__":
@@ -85,4 +88,6 @@ if __name__ == "__main__":
 
     # Power Curve berechnen und plotten
     power_df = create_power_curve(power_series, durations)
-    plot_power_curve(power_df)
+    fig = plot_power_curve(power_df)
+
+    fig.write_image("PowerCurve.png")

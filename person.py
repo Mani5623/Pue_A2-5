@@ -10,6 +10,7 @@ class Person:
         self.lastname = person_dict["lastname"]
         self.date_of_birth = person_dict["date_of_birth"]
         self.picture_path = person_dict["picture_path"]
+        self.gender = person_dict["gender"]
         self.ekg_tests_raw = person_dict.get("ekg_tests", [])
         self.ekg_tests = [EKGdata(test) for test in self.ekg_tests_raw]  # Liste von EKGdata-Objekten
 

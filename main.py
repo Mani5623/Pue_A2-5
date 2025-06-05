@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 pio.renderers.default = "browser"
 import read_data
@@ -33,8 +33,13 @@ with tab1:
     except Exception as e:
         st.error(f"Fehler beim Laden des Bilds: {e}")
 
-    st.write("Geburtsdatum:", person_dict.get("date_of_birth", "Unbekannt"))
-    st.write("Geschlecht:", person_dict.get("gender", "Unbekannt"))
+    st.write("ID:", person_dict.get("id", "Unbekannt"))
+
+    gender = person_dict.get("gender", None)
+    if gender is None or gender == "":
+        gender = "Unbekannt"
+    st.write("Geschlecht:", gender)
+
 
 with tab2:
     st.header("🫀 EKG-Datenanalyse")
@@ -43,23 +48,40 @@ with tab2:
         ekg_dict = person_dict["ekg_tests"][0]
         ekg = EKGdata(ekg_dict)
 
-        # Maximalpuls und Alter berechnen
+        # Maximalpuls automatisch berechnen (nur, wenn Gender vorhanden)
+        gender_for_hr = gender if gender != "Unbekannt" else "male"
         person_obj = Person(person_dict)
-        max_hr = person_obj.calc_max_heart_rate(gender=person_dict.get("gender", "male"))
-        age = person_obj.calc_age()
-        person_id = person_obj.id
+        max_hr = person_obj.calc_max_heart_rate(gender=gender_for_hr)
 
-        # EKG-Peaks berechnen
         ekg.find_peaks(max_puls=max_hr)
-        estimated_hr = ekg.estimate_hr()
+        estimated_hr = ekg.estimate_hr()        
 
-        st.write(f"ID: **{person_id}**")
-        st.write(f"Alter: **{age} Jahre**")
         st.write(f"Geschätzte Herzfrequenz: **{estimated_hr:.1f} bpm**")
         st.write(f"Geschätzte maximale Herzfrequenz: **{max_hr} bpm**")
+        st.write(f"Alter: **{person_obj.calc_age()} Jahre**")
+        st.write(f"ID: **{person_dict.get('id', 'Unbekannt')}**")
 
-        # EKG Zeitreihe anzeigen mit Peaks
-        fig = ekg.plot_with_peaks()
+        df = ekg.df
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df["Zeit in ms"], y=df["Messwerte in mV"], mode='lines', name='EKG Signal'))
+        peaks_df = df[df["Peak"] == 1]
+        fig.add_trace(go.Scatter(x=peaks_df["Zeit in ms"], y=peaks_df["Messwerte in mV"], mode='markers', name='Peaks'))
+
+        start = df["Zeit in ms"].min()
+        fig.update_layout(
+            title="EKG mit Peaks",
+            xaxis=dict(
+                range=[start, start + 5000],
+                rangeslider=dict(visible=True),
+                type="linear",
+                autorange=False
+            ),
+            yaxis_title="Messwerte in mV",
+            xaxis_title="Zeit in ms",
+            height=400
+        )
+
         st.plotly_chart(fig, use_container_width=True)
 
     else:
@@ -92,5 +114,3 @@ with tab3:
         st.subheader("⚡ Durchschnittliche Leistung je Zone")
         for zone, avg_power in avg_power_per_zone.items():
             st.write(f"{zone}: {avg_power:.1f} Watt")
-
-

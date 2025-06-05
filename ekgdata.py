@@ -52,14 +52,27 @@ class EKGdata:
         heart_rate = 60 / avg_rr
         return round(heart_rate)
 
-    def plot_with_peaks(self, max_points=2000):
+    def plot_with_peaks(self, window_ms=5000):
         if self.peaks is None:
             self.find_peaks()
-        df_plot = self.df.head(max_points)
+        df_plot = self.df  # Alle Daten anzeigen
         fig = px.line(df_plot, x="Zeit in ms", y="Messwerte in mV", title="EKG mit Peaks")
         peak_points = df_plot[df_plot["Peak"] == 1]
-        fig.add_scatter(x=peak_points["Zeit in ms"], y=peak_points["Messwerte in mV"], mode="markers", name="Peaks")
+        fig.add_scatter(x=peak_points["Zeit in ms"], y=peak_points["Messwerte in mV"],
+                        mode="markers", name="Peaks")
+    # Initial sichtbarer Bereich auf window_ms Breite setzen (Start bei erstem Zeitwert)
+        start_time = df_plot["Zeit in ms"].iloc[0]
+        end_time = start_time + window_ms
+        fig.update_layout(
+            xaxis=dict(
+                range=[start_time, end_time],
+                rangeslider=dict(visible=False),
+                type="linear"
+            )
+        )
         return fig
+
+
 
 
 if __name__ == "__main__":

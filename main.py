@@ -33,7 +33,7 @@ with tab1:
     except Exception as e:
         st.error(f"Fehler beim Laden des Bilds: {e}")
 
-    st.write("ID:", person_dict.get("id", "Unbekannt"))
+    st.write("Personen-ID:", person_dict.get("id", "Unbekannt"))
 
     gender = person_dict.get("gender", None)
     if gender is None or gender == "":
@@ -45,23 +45,31 @@ with tab2:
     st.header("🫀 EKG-Datenanalyse")
 
     if person_dict and person_dict.get("ekg_tests"):
-        ekg_dict = person_dict["ekg_tests"][0]
-        ekg = EKGdata(ekg_dict)
+        ekg_tests = person_dict["ekg_tests"]
+        ekg_options = [f"ID {test['id']} - {test['date']}" for test in ekg_tests]
+        selected_ekg_str = st.selectbox("EKG-Test auswählen", options=ekg_options)
 
-        # Maximalpuls automatisch berechnen (nur, wenn Gender vorhanden)
-        gender_for_hr = gender if gender != "Unbekannt" else "male"
+        selected_index = ekg_options.index(selected_ekg_str)
+        selected_ekg_dict = ekg_tests[selected_index]
+
+        ekg = EKGdata(selected_ekg_dict)
+        gender = person_dict.get("gender", "male")
         person_obj = Person(person_dict)
-        max_hr = person_obj.calc_max_heart_rate(gender=gender_for_hr)
-
+        max_hr = person_obj.calc_max_heart_rate(gender=gender)
         ekg.find_peaks(max_puls=max_hr)
-        estimated_hr = ekg.estimate_hr()        
+        estimated_hr = ekg.estimate_hr()
+        age = person_obj.calc_age()
 
-        st.write(f"Geschätzte Herzfrequenz: **{estimated_hr:.1f} bpm**")
-        st.write(f"Geschätzte maximale Herzfrequenz: **{max_hr} bpm**")
-        st.write(f"Alter: **{person_obj.calc_age()} Jahre**")
-        st.write(f"ID: **{person_dict.get('id', 'Unbekannt')}**")
+        st.write("Personen-ID:", person_dict.get("id", "Unbekannt"))
+        st.write(f"Alter: {age} Jahre")
+        st.write(f"EKG-ID: {selected_ekg_dict['id']}")
+        st.write(f"Geschätzte Herzfrequenz: {estimated_hr:.1f} bpm")
+        st.write(f"Geschätzter Maximalpuls: {max_hr} bpm")
 
         df = ekg.df
+
+        # Hier legen wir nur **ein** Platzhalter-Element an, das wir mit Plot füllen
+        plot_placeholder = st.empty()
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=df["Zeit in ms"], y=df["Messwerte in mV"], mode='lines', name='EKG Signal'))
@@ -82,10 +90,13 @@ with tab2:
             height=400
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        # Rendern in den Platzhalter - damit wird der alte Plot überschrieben!
+        plot_placeholder.plotly_chart(fig, use_container_width=True)
 
     else:
         st.info("Keine EKG-Daten für diese Person vorhanden.")
+
+
 
 with tab3:
     st.header("🚴 Leistungstest-Auswertung")

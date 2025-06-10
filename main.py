@@ -10,74 +10,84 @@ from PIL import Image
 from person import Person
 from ekgdata import EKGdata
 
-# Tabs: Person, EKG, Leistungstest
-tab1, tab2, tab3 = st.tabs(["👤 Versuchsperson", "🫀 EKG-Daten", "🚴 Leistungstest"])
-
-# Gemeinsame Daten
-person_names = read_data.get_person_list()
 DEFAULT_IMAGE_PATH = "data/pictures/none.jpg"
+
+# Personennamen laden
+person_names = read_data.get_person_list()
+
+# Person auswählen (Sidebar, damit Auswahl vor Tabs erfolgt)
+selected_name = st.sidebar.selectbox("Name der Versuchsperson", options=person_names)
+
+# Person-Objekt erzeugen
+person_obj = Person.load_by_name(selected_name)
+
+# Tabs definieren
+tab1, tab2, tab3 = st.tabs(["👤 Versuchsperson", "🫀 EKG-Daten", "🚴 Leistungstest"])
 
 with tab1:
     st.header("Versuchsperson auswählen")
-    selected_name = st.selectbox("Name der Versuchsperson", options=person_names)
 
-    person_dict = read_data.find_person_data_by_name(selected_name)
-    picture_path = person_dict.get("picture_path", DEFAULT_IMAGE_PATH)
+    # Bild und Infos
+    if person_obj:
+        picture_path = person_obj.picture_path or DEFAULT_IMAGE_PATH
+        try:
+            image = Image.open(picture_path)
+            st.image(image, caption=f"{person_obj.lastname}, {person_obj.firstname}", width=250)
+        except FileNotFoundError:
+            st.warning("Bilddatei nicht gefunden.")
+        except Exception as e:
+            st.error(f"Fehler beim Laden des Bilds: {e}")
 
-    # Bild anzeigen
-    try:
-        image = Image.open(picture_path)
-        st.image(image, caption=selected_name, width=250)
-    except FileNotFoundError:
-        st.warning("Bilddatei nicht gefunden.")
-    except Exception as e:
-        st.error(f"Fehler beim Laden des Bilds: {e}")
-
-    st.write("Personen-ID:", person_dict.get("id", "Unbekannt"))
-
-    gender = person_dict.get("gender", None)
-    if gender is None or gender == "":
-        gender = "Unbekannt"
-    st.write("Geschlecht:", gender)
-
+        st.write("Personen-ID:", person_obj.id)
+        gender = person_obj.gender or "Unbekannt"
+        st.write("Geschlecht:", gender)
+    else:
+        st.warning("Keine Person ausgewählt oder Person nicht gefunden.")
 
 with tab2:
     st.header("🫀 EKG-Datenanalyse")
 
-    if person_dict and person_dict.get("ekg_tests"):
-        ekg_tests = person_dict["ekg_tests"]
-        ekg_options = [f"ID {test['id']} - {test['date']}" for test in ekg_tests]
+    if person_obj and person_obj.ekg_tests:
+        ekg_tests = person_obj.ekg_tests
+
+        # Dropdown: Auswahl des EKG-Tests nach Datum und ID
+        ekg_options = [f"ID {test.id} - {test.date}" for test in ekg_tests]
         selected_ekg_str = st.selectbox("EKG-Test auswählen", options=ekg_options)
 
+        # Ausgewähltes EKG-Objekt
         selected_index = ekg_options.index(selected_ekg_str)
-        selected_ekg_dict = ekg_tests[selected_index]
+        ekg = ekg_tests[selected_index]
 
-        ekg = EKGdata(selected_ekg_dict)
-        gender = person_dict.get("gender", "male")
-        person_obj = Person(person_dict)
-        max_hr = person_obj.calc_max_heart_rate(gender=gender)
+        # Maximalpuls aus Person (mit Default fallback)
+        max_hr = person_obj.calc_max_heart_rate(gender=person_obj.gender)
+
+        # Peaks finden & Herzfrequenz schätzen
         ekg.find_peaks(max_puls=max_hr)
         estimated_hr = ekg.estimate_hr()
+        instant_hr = ekg.get_instant_hr() 
+
+        max_instant_hr = instant_hr.max() if len(instant_hr) > 0 else 0
         age = person_obj.calc_age()
 
-        st.write("Personen-ID:", person_dict.get("id", "Unbekannt"))
+        # Anzeige der Infos
+        st.write("Personen-ID:", person_obj.id)
         st.write(f"Alter: {age} Jahre")
-        st.write(f"EKG-ID: {selected_ekg_dict['id']}")
-        st.write(f"Geschätzte Herzfrequenz: {estimated_hr:.1f} bpm")
+        st.write(f"EKG-ID: {ekg.id}")
+        st.write(f"Geschätzte Herzfrequenz (durchschnittlich): {estimated_hr} bpm")
         st.write(f"Geschätzter Maximalpuls: {max_hr} bpm")
+        st.write(f"Maximale Herzfrequenz in EKG: {max_instant_hr:.1f} bpm")
+
 
         df = ekg.df
 
-        # Hier legen wir nur **ein** Platzhalter-Element an, das wir mit Plot füllen
-        plot_placeholder = st.empty()
-
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df["Zeit in ms"], y=df["Messwerte in mV"], mode='lines', name='EKG Signal'))
+        # EKG-Signal mit Peaks plotten (wie bisher)
+        fig_ekg = go.Figure()
+        fig_ekg.add_trace(go.Scatter(x=df["Zeit in ms"], y=df["Messwerte in mV"], mode='lines', name='EKG Signal'))
         peaks_df = df[df["Peak"] == 1]
-        fig.add_trace(go.Scatter(x=peaks_df["Zeit in ms"], y=peaks_df["Messwerte in mV"], mode='markers', name='Peaks'))
+        fig_ekg.add_trace(go.Scatter(x=peaks_df["Zeit in ms"], y=peaks_df["Messwerte in mV"], mode='markers', name='Peaks'))
 
         start = df["Zeit in ms"].min()
-        fig.update_layout(
+        fig_ekg.update_layout(
             title="EKG mit Peaks",
             xaxis=dict(
                 range=[start, start + 5000],
@@ -89,14 +99,33 @@ with tab2:
             xaxis_title="Zeit in ms",
             height=400
         )
+        st.plotly_chart(fig_ekg, use_container_width=True)
 
-        # Rendern in den Platzhalter - damit wird der alte Plot überschrieben!
-        plot_placeholder.plotly_chart(fig, use_container_width=True)
+        # --- Neuer Plot: Instantane Herzfrequenz über Zeit ---
+
+        # beat-to-beat Instant HR aus EKGdata-Klasse holen
+        instant_hr = ekg.get_instant_hr()
+
+        if len(instant_hr) == 0:
+            st.write("Keine Herzfrequenz-Daten verfügbar.")
+        else:
+            peak_times = df.loc[df["Peak"] == 1, "Zeit in ms"].values
+            hr_times = peak_times[:-1] + np.diff(peak_times) / 2  # Zeitpunkte zwischen Peaks
+
+            hr_df = pd.DataFrame({"Zeit in ms": hr_times, "Herzfrequenz (bpm)": instant_hr})
+
+            fig_hr = go.Figure()
+            fig_hr.add_trace(go.Scatter(x=hr_df["Zeit in ms"], y=hr_df["Herzfrequenz (bpm)"], mode="lines+markers", name="Instant HR"))
+            fig_hr.update_layout(
+                title="Instantane Herzfrequenz (beat-to-beat) über die Zeit",
+                xaxis_title="Zeit in ms",
+                yaxis_title="Herzfrequenz (bpm)",
+                height=400
+            )
+            st.plotly_chart(fig_hr, use_container_width=True)
 
     else:
         st.info("Keine EKG-Daten für diese Person vorhanden.")
-
-
 
 with tab3:
     st.header("🚴 Leistungstest-Auswertung")
